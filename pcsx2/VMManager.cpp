@@ -1051,6 +1051,8 @@ void VMManager::UpdateDiscDetails(bool booting)
 
 	if (!GSDumpReplayer::IsReplayingDump())
 		FileMcd_Reopen(memcardFilters.empty() ? s_disc_serial : memcardFilters);
+
+	Console.WriteLn("NIXX : BOOT GAME %s", s_disc_serial);
 }
 
 void VMManager::ClearDiscDetails()
@@ -1061,6 +1063,7 @@ void VMManager::ClearDiscDetails()
 	s_disc_version = {};
 	s_disc_elf = {};
 	s_disc_serial = {};
+	Console.WriteLn("NIXX : Stop Game");
 }
 
 void VMManager::HandleELFChange(bool verbose_patches_if_changed)

@@ -17,6 +17,8 @@
 #include "common/StringUtil.h"
 
 #include <tuple>
+#include <windows.h>
+#include "Memory.h"
 
 namespace usb_lightgun
 {
@@ -117,7 +119,8 @@ namespace usb_lightgun
 	struct GunCon2State
 	{
 		explicit GunCon2State(u32 port_);
-
+		~GunCon2State();
+		void SetTrigggerState(bool on);
 		USBDevice dev{};
 		USBDesc desc{};
 		USBDescDevice desc_dev{};
@@ -157,6 +160,28 @@ namespace usb_lightgun
 		s16 calibration_pos_y = 0;
 
 		bool auto_config_done = false;
+
+		int recoilPoolSpeed = 10;
+		void threadOutputs();
+		std::thread* myThread = nullptr;
+		std::string active_game = "";
+		bool triggerIsActive = false;
+		std::chrono::microseconds::rep triggerLastPress = 0;
+		std::chrono::microseconds::rep triggerLastRelease = 0;
+		std::chrono::microseconds::rep lastGunShot = 0;
+		std::chrono::microseconds::rep nextGunShot = 0;
+		int queueSizeGunshot = 0;
+		long fullAutoDelay = 0;
+		long multishotDelay = 0;
+		int lastAmmo = INT32_MAX;
+		int lastWeapon = 0;
+		int lastCharged = 0;
+		int lastOther1 = 0;
+		int lastOther2 = 0;
+		bool fullAutoActive = false;
+		float m_gun4irComPort = 0;
+		int gun4irComPort = 0;
+		HANDLE serialPort;
 
 		void AutoConfigure();
 
@@ -337,11 +362,104 @@ namespace usb_lightgun
 	GunCon2State::GunCon2State(u32 port_)
 		: port(port_)
 	{
+		Console.WriteLn("NIXX : GunCon2State -> Create GunConState %d", port_);
+	}
+
+	GunCon2State::~GunCon2State()
+	{
+		active_game = "";
+		Console.WriteLn("NIXX : GunCon2State -> Destroy");
+	}
+
+	void GunCon2State::SetTrigggerState(bool on)
+	{
+		if (on)
+		{
+			triggerIsActive = true;
+			triggerLastPress =
+				std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
+					.count();
+			//MameHookerProxy::GetInstance().SendState("TriggerPress_P" + std::to_string(port + 1), 1);
+		}
+		else
+		{
+			triggerIsActive = false;
+			triggerLastRelease =
+				std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
+					.count();
+			//MameHookerProxy::GetInstance().SendState("TriggerPress_P" + std::to_string(port + 1), 0);
+		}
+	}
+
+	void GunCon2State::threadOutputs()
+	{
+		Console.WriteLn("THREAD : Thread Start");
+		while (VMManager::HasValidVM() && active_game != "")
+		{
+			std::chrono::microseconds::rep timestamp =
+				std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
+					.count();
+			std::string output_signal = "";
+
+			if (active_game == "SLUS-20645")
+			{
+				bool valid_query = false;
+				u32 ammoCount = 0;
+				u32 weaponType = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x1EF5134);
+					weaponType = memRead32(0x19A67E0);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x1EF51E4);
+					weaponType = memRead32(0x19A6830);
+				}
+				if (valid_query)
+				{
+					if (ammoCount < lastAmmo && triggerIsActive && weaponType == lastWeapon)
+					{
+						output_signal = "gunshot";
+					}
+					lastAmmo = ammoCount;
+					lastWeapon = weaponType;
+				}
+			}
+
+
+
+			if (output_signal != "")
+			{
+				if (port == 0)
+				{
+					Console.WriteLn("GUN A : %s", output_signal.c_str());
+				}
+				if (port == 1)
+				{
+					Console.WriteLn("GUN B : %s", output_signal.c_str());
+				}
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+		Console.WriteLn("THREAD : Thread stop");
 	}
 
 	void GunCon2State::AutoConfigure()
 	{
 		const std::string serial = VMManager::GetDiscSerial();
+		Console.WriteLn("NIXX : GunCon2State -> Start GunCon %d for %s", port, serial);
+
+		if (active_game == "" && serial != "")
+		{
+			active_game = serial;
+			myThread = new std::thread(&GunCon2State::threadOutputs, this);
+		}
+
+
 		for (const GameConfig& gc : s_game_config)
 		{
 			if (serial != gc.serial)
@@ -371,6 +489,141 @@ namespace usb_lightgun
 			(has_relative_binds) ? GetAbsolutePositionFromRelativeAxes() : InputManager::GetPointerAbsolutePosition(0);
 		GSTranslateWindowToDisplayCoordinates(window_x, window_y, &pointer_x, &pointer_y);
 
+		//Apply aim adjustement for 2 players TimeCrisis if Widescreen on
+		float pointer_x2 = pointer_x;
+		float pointer_y2 = pointer_y;
+		if ((active_game == "SLUS-20219" || active_game == "SCES-50300" || active_game == "SCES-51844" || active_game == "SLUS-20645") && EmuConfig.CurrentAspectRatio == AspectRatioType::R16_9)
+		{
+			if (active_game == "SLUS-20219")
+			{
+				if (port == 0)
+				{
+					float min = 0.035;
+					float max = 0.9035;
+
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.25;
+					max = 0.69;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 2.7;
+				}
+				if (port == 1)
+				{
+					float min = 0.093;
+					float max = 0.970;
+
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.247;
+					max = 0.690;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 2.7;
+				}
+			}
+			if (active_game == "SCES-50300")
+			{
+				if (port == 0)
+				{
+					float min = 0.02798462;
+					float max = 0.90;
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.25;
+					max = 0.6950202;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 2.7;
+				}
+				if (port == 1)
+				{
+					float min = 0.093;
+					float max = 0.970;
+
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.247;
+					max = 0.690;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 2.7;
+				}
+			}
+
+			if (active_game == "SCES-51844")
+			{
+				if (port == 0)
+				{
+					float min = 0.035;
+					float max = 0.9035;
+
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.247;
+					max = 0.690;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 3.0;
+				}
+				if (port == 1)
+				{
+
+					float min = 0.095;
+					float max = 0.97;
+
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.247;
+					max = 0.690;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 3.0;
+				}
+			}
+
+			if (active_game == "SLUS-20645")
+			{
+				if (port == 0)
+				{
+					float min = 0.035;
+					float max = 0.9035;
+
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.247;
+					max = 0.690;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 3.1;
+				}
+				if (port == 1)
+				{
+
+					float min = 0.095;
+					float max = 0.97;
+
+					pointer_x = (pointer_x * (max - min)) + min;
+
+					min = 0.247;
+					max = 0.690;
+
+					pointer_y = (pointer_y * (max - min)) + min;
+
+					if (pointer_y > 0 && pointer_y < 1)
+						pointer_y += ((-0.04 * (pointer_y2 * pointer_y2)) + (0.04 * pointer_y2)) * 3.1;
+				}
+			}
+		}
 		s16 pos_x, pos_y;
 		if (pointer_x < 0.0f || pointer_y < 0.0f)
 		{
@@ -549,6 +802,12 @@ namespace usb_lightgun
 	void GunCon2Device::SetBindingValue(USBDevice* dev, u32 bind_index, float value) const
 	{
 		GunCon2State* s = USB_CONTAINER_OF(dev, GunCon2State, dev);
+
+
+		if (bind_index == BID_TRIGGER)
+		{
+			s->SetTrigggerState((value >= 0.5f));
+		}
 
 		if (bind_index < BID_RELATIVE_LEFT)
 		{
