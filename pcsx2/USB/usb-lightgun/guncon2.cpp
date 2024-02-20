@@ -19,6 +19,7 @@
 #include <tuple>
 #include <windows.h>
 #include "Memory.h"
+#include "MameHookerProxy.h"
 
 namespace usb_lightgun
 {
@@ -379,7 +380,7 @@ namespace usb_lightgun
 			triggerLastPress =
 				std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
 					.count();
-			//MameHookerProxy::GetInstance().SendState("TriggerPress_P" + std::to_string(port + 1), 1);
+			MameHookerProxy::GetInstance().SendState("TriggerPress_P" + std::to_string(port + 1), 1);
 		}
 		else
 		{
@@ -387,7 +388,7 @@ namespace usb_lightgun
 			triggerLastRelease =
 				std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
 					.count();
-			//MameHookerProxy::GetInstance().SendState("TriggerPress_P" + std::to_string(port + 1), 0);
+			MameHookerProxy::GetInstance().SendState("TriggerPress_P" + std::to_string(port + 1), 0);
 		}
 	}
 
@@ -431,6 +432,7 @@ namespace usb_lightgun
 
 
 
+    bool doRecoil = false;
 			if (output_signal != "")
 			{
 				if (port == 0)
@@ -441,6 +443,93 @@ namespace usb_lightgun
 				{
 					Console.WriteLn("GUN B : %s", output_signal.c_str());
 				}
+				if (output_signal == "gunshot")
+				{
+					nextGunShot = 0;
+					fullAutoDelay = 0;
+					queueSizeGunshot = 0;
+					multishotDelay = 0;
+					doRecoil = true;
+				}
+				if (output_signal.starts_with("multishot:"))
+				{
+					size_t firstColonPos = output_signal.find(':');
+					size_t secondColonPos = output_signal.find(':', firstColonPos + 1);
+
+					std::string num1Str = output_signal.substr(firstColonPos + 1, secondColonPos - firstColonPos - 1);
+					std::string num2Str = output_signal.substr(secondColonPos + 1);
+
+					int numberofshot = std::stoi(num1Str);
+					int delayshot = std::stoi(num2Str);
+
+					Console.WriteLn("MULTISHOT DELAY = %d", delayshot);
+
+
+					delayshot *= 1000;
+					nextGunShot = timestamp + delayshot;
+					fullAutoDelay = 0;
+					queueSizeGunshot = numberofshot - 1;
+					multishotDelay = delayshot;
+					doRecoil = true;
+				}
+				if (output_signal.starts_with("machinegun_on:"))
+				{
+					size_t colonPos = output_signal.find(':');
+					std::string valueStr = output_signal.substr(colonPos + 1);
+					int delayshot = std::stoi(valueStr);
+
+					delayshot *= 1000;
+					nextGunShot = timestamp + delayshot;
+					fullAutoDelay = delayshot;
+					queueSizeGunshot = 0;
+					delayshot = 0;
+					doRecoil = true;
+				}
+				if (output_signal == "machinegun_off")
+				{
+					int delayshot;
+					nextGunShot = 0;
+					fullAutoDelay = 0;
+				}
+			}
+			else
+			{
+				if (queueSizeGunshot > 0 && timestamp > nextGunShot)
+				{
+					doRecoil = true;
+					queueSizeGunshot--;
+					if (queueSizeGunshot > 0)
+					{
+						nextGunShot = timestamp + multishotDelay;
+					}
+				}
+				if (fullAutoDelay > 0 && timestamp > nextGunShot)
+				{
+					doRecoil = true;
+					nextGunShot = timestamp + fullAutoDelay;
+				}
+			}
+
+			if (doRecoil)
+			{
+				long long diffgunshot = timestamp - lastGunShot;
+				lastGunShot = timestamp;
+
+				if (port == 0)
+				{
+					Console.WriteLn("GUN A : SHOT (%lld)", diffgunshot);
+				}
+				if (port == 1)
+				{
+					Console.WriteLn("GUN B : SHOT (%lld)", diffgunshot);
+				}
+				/*
+				if (serialPort != INVALID_HANDLE_VALUE)
+				{
+					GunCon::SendComMessage("F0x2x0x");
+				}
+				*/
+				MameHookerProxy::GetInstance().Gunshot(port);
 			}
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));

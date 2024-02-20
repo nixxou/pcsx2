@@ -1137,6 +1137,7 @@ struct Pcsx2Config
 		EnableGameFixes : 1, // enables automatic game fixes
 		SaveStateOnShutdown : 1, // default value for saving state on shutdown
 		EnableDiscordPresence : 1, // enables discord rich presence integration
+		EnableMameHooker : 1,
 		InhibitScreensaver : 1,
 		BackupSavestate : 1,
 		SavestateZstdCompression : 1,

@@ -71,13 +71,20 @@
         </property>
        </widget>
       </item>
+      <item row="4" column="0">
+       <widget class="QCheckBox" name="enableMameHooker">
+        <property name="text">
+         <string>Enable MameHooker</string>
+        </property>
+       </widget>
+      </item>		 
       <item row="4" column="1">
        <widget class="QCheckBox" name="discordPresence">
         <property name="text">
          <string>Enable Discord Presence</string>
         </property>
        </widget>
-      </item>
+      </item>		 
      </layout>
     </widget>
    </item>

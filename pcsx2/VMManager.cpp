@@ -75,6 +75,8 @@
 #include "x86/newVif.h"
 #endif
 
+#include "MameHookerProxy.h"
+
 namespace VMManager
 {
 	static void SetDefaultLoggingSettings(SettingsInterface& si);
@@ -1052,7 +1054,12 @@ void VMManager::UpdateDiscDetails(bool booting)
 	if (!GSDumpReplayer::IsReplayingDump())
 		FileMcd_Reopen(memcardFilters.empty() ? s_disc_serial : memcardFilters);
 
+
 	Console.WriteLn("NIXX : BOOT GAME %s", s_disc_serial);
+	if (EmuConfig.EnableMameHooker)
+	{
+		MameHookerProxy::GetInstance().StartGame(s_disc_serial);
+	}
 }
 
 void VMManager::ClearDiscDetails()
@@ -1064,6 +1071,7 @@ void VMManager::ClearDiscDetails()
 	s_disc_elf = {};
 	s_disc_serial = {};
 	Console.WriteLn("NIXX : Stop Game");
+	MameHookerProxy::GetInstance().CloseGame();
 }
 
 void VMManager::HandleELFChange(bool verbose_patches_if_changed)
