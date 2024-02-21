@@ -402,7 +402,7 @@ namespace usb_lightgun
 					.count();
 			std::string output_signal = "";
 
-			if (active_game == "SLUS-20645")
+			if (active_game == "SLUS-20645") //Time Crisis 3 US
 			{
 				bool valid_query = false;
 				u32 ammoCount = 0;
@@ -431,8 +431,32 @@ namespace usb_lightgun
 			}
 
 
+			if (active_game == "SLUS-20219") //Time Crisis 2 US
+			{
+				bool valid_query = false;
+				u32 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x00643ABC);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x00643AEC);
+				}
+				if (valid_query)
+				{
+					if (ammoCount < lastAmmo && triggerIsActive)
+					{
+						output_signal = "gunshot";
+					}
+					lastAmmo = ammoCount;
+				}
+			}
 
-    bool doRecoil = false;
+
+			bool doRecoil = false;
 			if (output_signal != "")
 			{
 				if (port == 0)
