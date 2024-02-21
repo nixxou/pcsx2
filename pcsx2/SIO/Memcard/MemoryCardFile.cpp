@@ -24,6 +24,7 @@
 #include "fmt/core.h"
 
 #include <map>
+#include "VMManager.h"
 
 static constexpr int MCD_SIZE = 1024 * 8 * 16; // Legacy PSX card default size
 
@@ -191,18 +192,18 @@ uint FileMcd_GetMtapPort(uint slot)
 {
 	switch (slot)
 	{
-		case 0:
-		case 2:
-		case 3:
-		case 4:
-			return 0;
-		case 1:
-		case 5:
-		case 6:
-		case 7:
-			return 1;
+	case 0:
+	case 2:
+	case 3:
+	case 4:
+		return 0;
+	case 1:
+	case 5:
+	case 6:
+	case 7:
+		return 1;
 
-			jNO_DEFAULT
+		jNO_DEFAULT
 	}
 
 	return 0; // technically unreachable.
@@ -214,21 +215,21 @@ uint FileMcd_GetMtapSlot(uint slot)
 {
 	switch (slot)
 	{
-		case 0:
-		case 1:
-			pxFail("Invalid parameter in call to GetMtapSlot -- specified slot is one of the base slots, not a Multitap slot.");
-			break;
+	case 0:
+	case 1:
+		pxFail("Invalid parameter in call to GetMtapSlot -- specified slot is one of the base slots, not a Multitap slot.");
+		break;
 
-		case 2:
-		case 3:
-		case 4:
-			return slot - 1;
-		case 5:
-		case 6:
-		case 7:
-			return slot - 4;
+	case 2:
+	case 3:
+	case 4:
+		return slot - 1;
+	case 5:
+	case 6:
+	case 7:
+		return slot - 4;
 
-			jNO_DEFAULT
+		jNO_DEFAULT
 	}
 
 	return 0; // technically unreachable.
@@ -253,6 +254,7 @@ FileMemoryCard::~FileMemoryCard() = default;
 
 void FileMemoryCard::Open()
 {
+	Console.WriteLn("Memory Card CHECK !");
 	for (int slot = 0; slot < 8; ++slot)
 	{
 		m_filenames[slot] = {};
@@ -268,7 +270,26 @@ void FileMemoryCard::Open()
 				continue;
 		}
 
-		const std::string fname = EmuConfig.FullpathToMcd(slot);
+		std::string fname = EmuConfig.FullpathToMcd(slot);
+		std::string serial = VMManager::GetDiscSerial();
+		std::string fileName = fname;
+		size_t found = fname.find_last_of("\\");
+		if (found != std::string::npos) fileName = fname.substr(found + 1);
+		std::string newFilePath = "";
+		if (fileName == "Mcd001.ps2")
+		{
+			// Remplacer le nom du fichier par XXX.ps2
+			size_t dotPos = fileName.find_last_of(".");
+			std::string newFileName = serial + ".ps2";
+			newFilePath = fname.substr(0, found + 1) + newFileName;
+		}
+		if (newFilePath != "" && FileSystem::GetPathFileSize(newFilePath.c_str()) > 0)
+		{
+			fname = newFilePath;
+		}
+
+
+		Console.WriteLn("Memory Card file = %s (%s) for serial %s : %s", fname.c_str(), fileName.c_str(), serial.c_str(), newFilePath.c_str());
 
 		if (!EmuConfig.Mcd[slot].Enabled || fname.empty())
 		{
