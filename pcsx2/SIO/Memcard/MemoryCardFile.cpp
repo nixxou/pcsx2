@@ -254,7 +254,6 @@ FileMemoryCard::~FileMemoryCard() = default;
 
 void FileMemoryCard::Open()
 {
-	Console.WriteLn("Memory Card CHECK !");
 	for (int slot = 0; slot < 8; ++slot)
 	{
 		m_filenames[slot] = {};
@@ -278,8 +277,6 @@ void FileMemoryCard::Open()
 		std::string newFilePath = "";
 		if (fileName == "Mcd001.ps2")
 		{
-			// Remplacer le nom du fichier par XXX.ps2
-			size_t dotPos = fileName.find_last_of(".");
 			std::string newFileName = serial + ".ps2";
 			newFilePath = fname.substr(0, found + 1) + newFileName;
 		}
@@ -287,9 +284,6 @@ void FileMemoryCard::Open()
 		{
 			fname = newFilePath;
 		}
-
-
-		Console.WriteLn("Memory Card file = %s (%s) for serial %s : %s", fname.c_str(), fileName.c_str(), serial.c_str(), newFilePath.c_str());
 
 		if (!EmuConfig.Mcd[slot].Enabled || fname.empty())
 		{

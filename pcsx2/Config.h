@@ -1138,6 +1138,7 @@ struct Pcsx2Config
 		SaveStateOnShutdown : 1, // default value for saving state on shutdown
 		EnableDiscordPresence : 1, // enables discord rich presence integration
 		EnableMameHooker : 1,
+		AutoBootSaveStateTen : 1,
 		InhibitScreensaver : 1,
 		BackupSavestate : 1,
 		SavestateZstdCompression : 1,

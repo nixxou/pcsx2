@@ -402,6 +402,240 @@ namespace usb_lightgun
 					.count();
 			std::string output_signal = "";
 
+			if (active_game == "SLES-50930") //Dino Stalker (E, English)
+			{
+				bool valid_query = false;
+				u8 ammoFirst = 0;
+				u8 ammoSecond = 0;
+				int ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoFirst = memRead8(0x5986A8);
+					ammoSecond = memRead8(0x5986F8);
+					ammoCount = ammoFirst + ammoSecond;
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLES-51095") //Dino Stalker (E, French)
+			{
+				bool valid_query = false;
+				u8 ammoFirst = 0;
+				u8 ammoSecond = 0;
+				int ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoFirst = memRead8(0x59AB78);
+					ammoSecond = memRead8(0x59ABC8);
+					ammoCount = ammoFirst + ammoSecond;
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+			if (active_game == "SLUS-20485") //Dino Stalker (USA)
+			{
+				bool valid_query = false;
+				u8 ammoFirst = 0;
+				u8 ammoSecond = 0;
+				int ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoFirst = memRead8(0x5980E8);
+					ammoSecond = memRead8(0x598138);
+					ammoCount = ammoFirst + ammoSecond;
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+			if (active_game == "SLUS-20389") //EndGame US
+			{
+				bool valid_query = false;
+				u32 PointerAmmo = 0;
+				u8 ammoSecond = 0;
+				int ammoCount = 0;
+				if (port == 1) //Port 1 = Player 1
+				{
+					valid_query = true;
+					PointerAmmo = memRead32(0xD5BDBC);
+					if (PointerAmmo >0) ammoCount = memRead8(PointerAmmo + 0x10);
+				}
+				if (port == 0) //Port 1 = Player 1
+				{
+					valid_query = true;
+					PointerAmmo = memRead32(0xD5BDC0);
+					if (PointerAmmo >0) ammoCount = memRead8(PointerAmmo + 0x10);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLPM-65139") //Gun Survivor 3: Dino Crisis (J)
+			{
+				bool valid_query = false;
+				u8 ammoFirst = 0;
+				u8 ammoSecond = 0;
+				int ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoFirst = memRead8(0x591778);
+					ammoSecond = memRead8(0x5917C8);
+					ammoCount = ammoFirst + ammoSecond;
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLES-52620") //Guncom 2 (E)
+			{
+				bool valid_query = false;
+				u8 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x4139F1);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x413A2D);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLES-51289") //Gunfighter 2 - Jesse James (E)
+			{
+				bool valid_query = false;
+				u32 PointerAmmo = 0;
+				u8 ammoSecond = 0;
+				int ammoCount = 0;
+				if (port == 1) //Gun 1 to port 2
+				{
+					valid_query = true;
+					PointerAmmo = memRead32(0x209984);
+					if (PointerAmmo > 0)
+						ammoCount = memRead8(PointerAmmo + 0x11C);
+				}
+				if (port == 0)
+				{
+					valid_query = true;
+					PointerAmmo = memRead32(0x209984);
+					if (PointerAmmo > 0)
+						ammoCount = memRead8(PointerAmmo + 0x174);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+
+			if (active_game == "SLPS-25165") //Gunvari Collection (J) (480i) : Only time crisis
+			{
+				bool valid_query = false;
+				u8 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x3F4B4C);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLUS-20492") //Ninja Assault (U)
+			{
+				bool valid_query = false;
+				u8 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x7DFEB0);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x7DFEB2);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 100000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
 			if (active_game == "SLUS-20645") //Time Crisis 3 US
 			{
 				bool valid_query = false;

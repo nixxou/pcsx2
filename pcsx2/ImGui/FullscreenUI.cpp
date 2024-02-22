@@ -2721,6 +2721,9 @@ void FullscreenUI::DrawInterfaceSettingsPage()
 	DrawToggleSetting(bsi, FSUI_ICONSTR(ICON_FA_CHARGING_STATION, "Enable MameHooker"),
 		FSUI_CSTR("Enable MameHooker Outputs (need .NET 8)."), "UI", "EnableMameHooker", false);
 
+	DrawToggleSetting(bsi, FSUI_ICONSTR(ICON_FA_CHARGING_STATION, "AutoBoot SaveState 10"),
+		FSUI_CSTR("If SaveState 10 exist, autoboot on it"), "UI", "AutoBootSaveStateTen", false);
+
 	DrawToggleSetting(bsi, FSUI_ICONSTR(ICON_FA_PAUSE, "Pause On Start"), FSUI_CSTR("Pauses the emulator when a game is started."), "UI",
 		"StartPaused", false);
 	DrawToggleSetting(bsi, FSUI_ICONSTR(ICON_FA_VIDEO, "Pause On Focus Loss"),

@@ -1949,7 +1949,19 @@ int main(int argc, char* argv[])
 
 	// Skip the update check if we're booting a game directly.
 	if (autoboot)
-		g_emu_thread->startVM(std::move(autoboot));
+	{
+		//ForceLoadSaveStateTen
+		if (EmuConfig.AutoBootSaveStateTen && autoboot->state_index == 0 && autoboot->save_state == "")
+		{
+			std::string saveStateFile = VMManager::GetSaveStateFileName(autoboot->filename.c_str(), 10);
+			QFileInfo fi(saveStateFile.c_str());
+			if (fi.exists())
+			{
+				autoboot->state_index = 10;
+			}		
+		}		
+		g_emu_thread->startVM(std::move(autoboot));	
+	}
 	else if (!s_nogui_mode)
 		g_main_window->startupUpdateCheck();
 
