@@ -77,9 +77,12 @@ namespace usb_lightgun
 		{"SCES-50889", 90.25f, 94.5f, 390, 169, 640, 256}, // Ninja Assault (E)
 		{"SLPS-20218", 90.0f, 92.0f, 320, 134, 640, 240}, // Ninja Assault (J)
 		{"SLUS-20492", 90.25f, 92.5f, 390, 132, 640, 240}, // Ninja Assault (U)
-		{"SLES-50650", 84.75f, 96.0f, 454, 164, 640, 240}, // Resident Evil Survivor 2 (E)
+		//{"SLES-50650", 84.75f, 96.0f, 454, 164, 640, 240}, // Resident Evil Survivor 2 (E) ori
+		{"SLES-50650", 90.25f, 107.0f, 425, 135, 640, 240}, // Resident Evil Survivor 2 (E) Fixed, you need to press start to skip guncon calibration
 		{"SLES-51448", 90.25f, 95.0f, 420, 132, 640, 240}, // Resident Evil - Dead Aim (E)
 		{"SLUS-20669", 90.25f, 93.5f, 420, 132, 640, 240}, // Resident Evil - Dead Aim (U)
+		//{"SLUS-20619", 90.25f, 91.75f, 453, 154, 640, 256}, // Starsky & Hutch (U)
+		{"SLES-51617", 90.25f, 82.0f, 200, 154, 640, 256}, // Starsky & Hutch (E)
 		{"SLUS-20619", 90.25f, 91.75f, 453, 154, 640, 256}, // Starsky & Hutch (U)
 		{"SCES-50300", 90.25f, 102.75f, 390, 138, 640, 256}, // Time Crisis II (E)
 		{"SLUS-20219", 90.25f, 97.5f, 390, 154, 640, 240}, // Time Crisis 2 (U)
@@ -162,9 +165,13 @@ namespace usb_lightgun
 
 		bool auto_config_done = false;
 
+		bool quitThread = false;
+		bool threadOutputLoaded = false;
 		int recoilPoolSpeed = 10;
 		void threadOutputs();
+		void threadAutoConfigure();
 		std::thread* myThread = nullptr;
+		std::thread* myThreadAutoConfigure = nullptr;
 		std::string active_game = "";
 		bool triggerIsActive = false;
 		std::chrono::microseconds::rep triggerLastPress = 0;
@@ -363,19 +370,20 @@ namespace usb_lightgun
 	GunCon2State::GunCon2State(u32 port_)
 		: port(port_)
 	{
-		Console.WriteLn("NIXX : GunCon2State -> Create GunConState %d", port_);
+		myThreadAutoConfigure = new std::thread(&GunCon2State::threadAutoConfigure, this);
 	}
 
 	GunCon2State::~GunCon2State()
 	{
 		active_game = "";
+		quitThread = true;
 		Console.WriteLn("NIXX : GunCon2State -> Destroy");
 	}
 
 	void GunCon2State::SetTrigggerState(bool on)
 	{
 		if (on)
-		{
+		{			
 			triggerIsActive = true;
 			triggerLastPress =
 				std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
@@ -394,8 +402,9 @@ namespace usb_lightgun
 
 	void GunCon2State::threadOutputs()
 	{
+		threadOutputLoaded = true;
 		Console.WriteLn("THREAD : Thread Start");
-		while (VMManager::HasValidVM() && active_game != "")
+		while (VMManager::HasValidVM() && active_game != "" && !quitThread)
 		{
 			std::chrono::microseconds::rep timestamp =
 				std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
@@ -636,6 +645,170 @@ namespace usb_lightgun
 				}
 			}
 
+
+			if (active_game == "SLES-50650") //Resident Evil Survivor 2 (E)
+			{
+				bool valid_query = false;
+				u8 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x1DF5DC0);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 200000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLUS-20669") //Resident Evil Dead Aim US
+			{
+				bool valid_query = false;
+				u8 ammoCount = 0;
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x257FD4);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 100000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLES-51617") //Starsky & Hutch (E)
+			{
+				bool valid_query = false;
+				u8 ammoCount = 0;
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x5584D0);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 100000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLUS-20619") //Starsky & Hutch (U)
+			{
+				bool valid_query = false;
+				u8 ammoCount = 0;
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead8(0x55D9D0);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 100000))
+					{
+						output_signal = "gunshot";
+						triggerLastPress = 0;
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SCES-50300") //Time Crisis 2 EU
+			{
+				bool valid_query = false;
+				u32 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x661A04);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x661A34);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 100000))
+					{
+						output_signal = "gunshot";
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+			if (active_game == "SLUS-20219") //Time Crisis 2 US
+			{
+				bool valid_query = false;
+				u32 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x643ABC);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x643AEC);
+				}
+				if (valid_query)
+				{
+					long long diff = timestamp - triggerLastPress;
+					if (ammoCount < lastAmmo && (triggerIsActive || diff < 100000))
+					{
+						output_signal = "gunshot";
+					}
+					lastAmmo = ammoCount;
+				}
+			}
+
+
+			if (active_game == "SCES-51844") //Time Crisis 3 EU
+			{
+				bool valid_query = false;
+				u32 ammoCount = 0;
+				u32 weaponType = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x1F6B774);
+					weaponType = memRead32(0x1A1C790);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x1F6B824);
+					weaponType = memRead32(0x1A1C7E0);
+				}
+				if (valid_query)
+				{
+					if (ammoCount < lastAmmo && triggerIsActive && weaponType == lastWeapon)
+					{
+						output_signal = "gunshot";
+					}
+					lastAmmo = ammoCount;
+					lastWeapon = weaponType;
+				}
+			}
+
 			if (active_game == "SLUS-20645") //Time Crisis 3 US
 			{
 				bool valid_query = false;
@@ -664,30 +837,36 @@ namespace usb_lightgun
 				}
 			}
 
-
-			if (active_game == "SLUS-20219") //Time Crisis 2 US
+			if (active_game == "SLUS-20927") //Time Crisis Crisis Zone US
 			{
 				bool valid_query = false;
 				u32 ammoCount = 0;
+				u32 weaponType = 0;
 				if (port == 0)
 				{
 					valid_query = true;
-					ammoCount = memRead32(0x00643ABC);
+					ammoCount = memRead32(0x7D1394);
+					weaponType = memRead32(0x79C688);
 				}
 				if (port == 1)
 				{
 					valid_query = true;
-					ammoCount = memRead32(0x00643AEC);
+					ammoCount = memRead32(0x7D13D4);
+					weaponType = 0;
 				}
 				if (valid_query)
 				{
-					if (ammoCount < lastAmmo && triggerIsActive)
+					if (ammoCount < lastAmmo && triggerIsActive && weaponType == lastWeapon)
 					{
 						output_signal = "gunshot";
 					}
 					lastAmmo = ammoCount;
+					lastWeapon = weaponType;
 				}
 			}
+
+			
+
 
 
 			bool doRecoil = false;
@@ -795,16 +974,47 @@ namespace usb_lightgun
 		Console.WriteLn("THREAD : Thread stop");
 	}
 
+	void GunCon2State::threadAutoConfigure()
+	{
+		int i = 0;
+		while (threadOutputLoaded == false)
+		{
+			if (quitThread)
+				return;
+			if (i < 50)
+			{
+				i++;
+			}
+			else
+			{
+				Console.WriteLn("ThreadLOAD INIT");
+				std::string serial = VMManager::GetDiscSerial();
+				if (serial != "" && active_game == "" && VMManager::HasValidVM())
+				{
+					active_game = serial;
+					myThread = new std::thread(&GunCon2State::threadOutputs, this);
+					return;
+					//AutoConfigure();
+				}			
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+
+	}
+
 	void GunCon2State::AutoConfigure()
 	{
-		const std::string serial = VMManager::GetDiscSerial();
-		Console.WriteLn("NIXX : GunCon2State -> Start GunCon %d for %s", port, serial);
+
+		std::string serial = VMManager::GetDiscSerial();
+		
+		Console.WriteLn("NIXX : GunCon2State -> Start GunCon %d for %s", port, serial.c_str());
 
 		if (active_game == "" && serial != "")
 		{
 			active_game = serial;
 			myThread = new std::thread(&GunCon2State::threadOutputs, this);
 		}
+		
 
 
 		for (const GameConfig& gc : s_game_config)
