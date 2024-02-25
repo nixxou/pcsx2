@@ -77,7 +77,6 @@ namespace usb_lightgun
 		{"SCES-50889", 90.25f, 94.5f, 390, 169, 640, 256}, // Ninja Assault (E)
 		{"SLPS-20218", 90.0f, 92.0f, 320, 134, 640, 240}, // Ninja Assault (J)
 		{"SLUS-20492", 90.25f, 92.5f, 390, 132, 640, 240}, // Ninja Assault (U)
-		//{"SLES-50650", 84.75f, 96.0f, 454, 164, 640, 240}, // Resident Evil Survivor 2 (E) ori
 		{"SLES-50650", 90.25f, 107.0f, 425, 135, 640, 240}, // Resident Evil Survivor 2 (E) Fixed, you need to press start to skip guncon calibration
 		{"SLES-51448", 90.25f, 95.0f, 420, 132, 640, 240}, // Resident Evil - Dead Aim (E)
 		{"SLUS-20669", 90.25f, 93.5f, 420, 132, 640, 240}, // Resident Evil - Dead Aim (U)
@@ -93,7 +92,7 @@ namespace usb_lightgun
 		// {"SLUS-20927", 94.5f, 104.75f, 423, 407, 768, 768}, // Time Crisis - Crisis Zone (U) (480p)
 		{"SCES-50411", 89.8f, 99.9f, 421, 138, 640, 256}, // Vampire Night (E)
 		{"SLPS-25077", 90.0f, 97.5f, 422, 118, 640, 240}, // Vampire Night (J)
-		{"SLUS-20221", 89.8f, 102.5f, 422, 124, 640, 228}, // Vampire Night (U)
+		{"SLUS-20221", 89.8f, 102.5f, 452, 137, 640, 228}, // Vampire Night (U) //Fixed
 		{"SLES-51229", 110.15f, 100.0f, 433, 159, 512, 256}, // Virtua Cop - Elite Edition (E,J) (480i)
 		// {"SLES-51229", 85.75f, 92.0f, 456, 164, 640, 256}, // Virtua Cop - Elite Edition (E,J) (480p)
 	};
@@ -865,8 +864,53 @@ namespace usb_lightgun
 				}
 			}
 
+			if (active_game == "SLUS-20221") //Vampire Night (U)
+			{
+				bool valid_query = false;
+				u32 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x49306C);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x4933B4);
+				}
+				if (valid_query)
+				{
+					if (ammoCount < lastAmmo && triggerIsActive)
+					{
+						output_signal = "gunshot";
+					}
+					lastAmmo = ammoCount;
+				}
+			}
 			
-
+			if (active_game == "SLES-51229") //Virtua Cop Elite Edition
+			{
+				bool valid_query = false;
+				u32 ammoCount = 0;
+				if (port == 0)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x1FCECC);
+				}
+				if (port == 1)
+				{
+					valid_query = true;
+					ammoCount = memRead32(0x1FCF38);
+				}
+				if (valid_query)
+				{
+					if (ammoCount < lastAmmo && triggerIsActive)
+					{
+						output_signal = "gunshot";
+					}
+					lastAmmo = ammoCount;
+				}
+			}
 
 
 			bool doRecoil = false;
@@ -993,8 +1037,8 @@ namespace usb_lightgun
 				{
 					active_game = serial;
 					myThread = new std::thread(&GunCon2State::threadOutputs, this);
-					return;
 					//AutoConfigure();
+					return;
 				}			
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
