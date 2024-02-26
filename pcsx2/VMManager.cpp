@@ -1060,6 +1060,28 @@ void VMManager::UpdateDiscDetails(bool booting)
 	{
 		MameHookerProxy::GetInstance().StartGame(s_disc_serial);
 	}
+
+
+	std::string exePath = FileSystem::GetProgramPath();
+	size_t found = exePath.find_last_of("\\");
+	if (found != std::string::npos)
+	{
+		std::string ReshadeFile = exePath.substr(0, found + 1) + "ReShade.ini";
+		std::string ReshadeDefault = exePath.substr(0, found + 1) + "DefaultReshadePreset.ini";
+		std::string ReshadeGame = exePath.substr(0, found + 1) + s_disc_serial + ".ini";
+		if (FileSystem::FileExists(ReshadeFile.c_str()) && FileSystem::FileExists(ReshadeDefault.c_str()))
+		{
+			if (FileSystem::FileExists(ReshadeGame.c_str()))
+			{
+
+				WritePrivateProfileStringA("GENERAL", "PresetPath", ReshadeGame.c_str(), ReshadeFile.c_str());
+			}
+			else
+			{
+				WritePrivateProfileStringA("GENERAL", "PresetPath", ReshadeDefault.c_str(), ReshadeFile.c_str());
+			}
+		}
+	}
 }
 
 void VMManager::ClearDiscDetails()

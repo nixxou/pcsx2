@@ -4571,8 +4571,25 @@ static void DrawShadowedText(
 
 void FullscreenUI::DrawPauseMenu(MainWindowType type)
 {
+
+
 	ImDrawList* dl = ImGui::GetBackgroundDrawList();
 	const ImVec2 display_size(ImGui::GetIO().DisplaySize);
+
+	bool reduceSize = (EmuConfig.CurrentAspectRatio == AspectRatioType::R4_3 || EmuConfig.CurrentAspectRatio == AspectRatioType::RAuto4_3_3_2);
+	float minsize = 0.0f;
+	float aspectRatio = 1;
+	if (reduceSize)
+	{
+		aspectRatio = (4.0f / 3.0f);
+		if (EmuConfig.CurrentAspectRatio == AspectRatioType::RAuto4_3_3_2 && GSgetDisplayMode() == GSVideoMode::SDTV_480P)
+		{
+			aspectRatio = (3.0f / 2.0f);
+		}
+		minsize = (display_size.x - (display_size.y * aspectRatio)) / 2.0f;
+	}
+
+
 	const ImU32 text_color = IM_COL32(UIBackgroundTextColor.x * 255, UIBackgroundTextColor.y * 255, UIBackgroundTextColor.z * 255, 255);
 	dl->AddRectFilled(
 		ImVec2(0.0f, 0.0f), display_size, IM_COL32(UIBackgroundColor.x * 255, UIBackgroundColor.y * 255, UIBackgroundColor.z * 255, 200));
@@ -4592,10 +4609,10 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 			g_medium_font->FontSize, std::numeric_limits<float>::max(), -1.0f, s_current_game_subtitle.c_str()));
 
 		ImVec2 title_pos(
-			display_size.x - LayoutScale(10.0f + image_width + 20.0f) - title_size.x, display_size.y - LayoutScale(10.0f + image_height));
-		ImVec2 path_pos(display_size.x - LayoutScale(10.0f + image_width + 20.0f) - path_size.x,
+			display_size.x - LayoutScale(10.0f + image_width + 20.0f) - title_size.x -minsize, display_size.y - LayoutScale(10.0f + image_height));
+		ImVec2 path_pos(display_size.x - LayoutScale(10.0f + image_width + 20.0f) - path_size.x - minsize,
 			title_pos.y + g_large_font->FontSize + LayoutScale(4.0f));
-		ImVec2 subtitle_pos(display_size.x - LayoutScale(10.0f + image_width + 20.0f) - subtitle_size.x,
+		ImVec2 subtitle_pos(display_size.x - LayoutScale(10.0f + image_width + 20.0f) - subtitle_size.x - minsize,
 			(path_string.empty() ? title_pos.y + g_large_font->FontSize : path_pos.y + g_medium_font->FontSize) + LayoutScale(4.0f));
 
 		float rp_height = 0.0f;
@@ -4633,7 +4650,7 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 
 		GSTexture* const cover = GetCoverForCurrentGame();
 		const ImVec2 image_min(
-			display_size.x - LayoutScale(10.0f + image_width), display_size.y - LayoutScale(10.0f + image_height) - rp_height);
+			display_size.x - LayoutScale(10.0f + image_width)- minsize, display_size.y - LayoutScale(10.0f + image_height) - rp_height);
 		const ImVec2 image_max(image_min.x + LayoutScale(image_width), image_min.y + LayoutScale(image_height) + rp_height);
 		const ImRect image_rect(CenterImage(
 			ImRect(image_min, image_max), ImVec2(static_cast<float>(cover->GetWidth()), static_cast<float>(cover->GetHeight()))));
@@ -4653,7 +4670,7 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 		std::strftime(buf, sizeof(buf), "%X", &ltime);
 
 		const ImVec2 time_size(g_large_font->CalcTextSizeA(g_large_font->FontSize, std::numeric_limits<float>::max(), -1.0f, buf));
-		const ImVec2 time_pos(display_size.x - LayoutScale(10.0f) - time_size.x, LayoutScale(10.0f));
+		const ImVec2 time_pos(display_size.x - LayoutScale(10.0f) - time_size.x - minsize, LayoutScale(10.0f));
 		DrawShadowedText(dl, g_large_font, time_pos, text_color, buf);
 
 		if (!s_current_disc_serial.empty())
@@ -4667,19 +4684,19 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 			buf.fmt(FSUI_FSTR("This Session: {}"), session_time_str);
 			const ImVec2 session_size(g_medium_font->CalcTextSizeA(g_medium_font->FontSize, std::numeric_limits<float>::max(), -1.0f, buf));
 			const ImVec2 session_pos(
-				display_size.x - LayoutScale(10.0f) - session_size.x, time_pos.y + g_large_font->FontSize + LayoutScale(4.0f));
+				display_size.x - LayoutScale(10.0f) - session_size.x - minsize, time_pos.y + g_large_font->FontSize + LayoutScale(4.0f));
 			DrawShadowedText(dl, g_medium_font, session_pos, text_color, buf);
 
 			buf.fmt(FSUI_FSTR("All Time: {}"), played_time_str);
 			const ImVec2 total_size(g_medium_font->CalcTextSizeA(g_medium_font->FontSize, std::numeric_limits<float>::max(), -1.0f, buf));
 			const ImVec2 total_pos(
-				display_size.x - LayoutScale(10.0f) - total_size.x, session_pos.y + g_medium_font->FontSize + LayoutScale(4.0f));
+				display_size.x - LayoutScale(10.0f) - total_size.x - minsize, session_pos.y + g_medium_font->FontSize + LayoutScale(4.0f));
 			DrawShadowedText(dl, g_medium_font, total_pos, text_color, buf);
 		}
 	}
 
 	const ImVec2 window_size(LayoutScale(500.0f, LAYOUT_SCREEN_HEIGHT));
-	const ImVec2 window_pos(0.0f, display_size.y - window_size.y);
+	const ImVec2 window_pos(minsize, display_size.y - window_size.y);
 
 	if (BeginFullscreenWindow(
 			window_pos, window_size, "pause_menu", ImVec4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, 10.0f, ImGuiWindowFlags_NoBackground))
@@ -4943,6 +4960,19 @@ void FullscreenUI::DrawSaveStateSelector(bool is_loading)
 {
 	ImGuiIO& io = ImGui::GetIO();
 
+	bool reduceSize = (EmuConfig.CurrentAspectRatio == AspectRatioType::R4_3 || EmuConfig.CurrentAspectRatio == AspectRatioType::RAuto4_3_3_2);
+	float minsize = 0.0f;
+	float aspectRatio = 1;
+	if (reduceSize)
+	{
+		aspectRatio = (4.0f / 3.0f);
+		if (EmuConfig.CurrentAspectRatio == AspectRatioType::RAuto4_3_3_2 && GSgetDisplayMode() == GSVideoMode::SDTV_480P)
+		{
+			aspectRatio = (3.0f / 2.0f);
+		}
+		minsize = (io.DisplaySize.x - (io.DisplaySize.y * aspectRatio)) / 2.0f;
+	}
+
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
 	ImGui::SetNextWindowSize(io.DisplaySize);
 
@@ -5015,7 +5045,7 @@ void FullscreenUI::DrawSaveStateSelector(bool is_loading)
 		const float item_height = (style.FramePadding.y * 2.0f) + image_height + title_spacing + g_large_font->FontSize + summary_spacing +
 								  g_medium_font->FontSize;
 		const ImVec2 item_size(item_width, item_height);
-		const u32 grid_count_x = std::floor(ImGui::GetWindowWidth() / item_width_with_spacing);
+		const u32 grid_count_x = std::floor((ImGui::GetWindowWidth() - (minsize*2)) / item_width_with_spacing);
 		const float start_x =
 			(static_cast<float>(ImGui::GetWindowWidth()) - (item_width_with_spacing * static_cast<float>(grid_count_x))) * 0.5f;
 
