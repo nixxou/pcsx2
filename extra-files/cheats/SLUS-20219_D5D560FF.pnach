@@ -1,0 +1,13 @@
+gametitle=Time Crisis II (NTSC-U) [SLUS-20219]
+
+//fix audio
+patch=1,EE,00154954,word,10000009
+
+//no gun flash
+patch=1,EE,20214A44,extended,00000000
+
+//deinterlacing
+patch=1,EE,202AE22C,extended,31420001
+
+//Co op 60FPS
+patch=1,EE,0029224C,extended,24820002

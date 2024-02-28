@@ -19,6 +19,12 @@ public:
   bool pipeConnectedGunD = false;
   bool active = false;
 
+  bool useSindenRecoil = false;
+  bool pipeConnectedSindenGunA = false;
+  bool pipeConnectedSindenGunB = false;
+  HANDLE hPipeSindenGunA = nullptr;
+  HANDLE hPipeSindenGunB = nullptr;
+
   PROCESS_INFORMATION* processInfo = nullptr;
 
 

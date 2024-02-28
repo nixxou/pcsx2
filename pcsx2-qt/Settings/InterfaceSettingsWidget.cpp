@@ -70,6 +70,7 @@ InterfaceSettingsWidget::InterfaceSettingsWidget(SettingsWindow* dialog, QWidget
 	SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.discordPresence, "EmuCore", "EnableDiscordPresence", false);
 	SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.enableMameHooker, "EmuCore", "EnableMameHooker", false);
 	SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.autoBootSaveStateTen, "EmuCore", "AutoBootSaveStateTen", false);
+	SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.sindenRecoil, "EmuCore", "SindenRecoil", false);
 
 	SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.startFullscreen, "UI", "StartFullscreen", false);
 	SettingWidgetBinder::BindWidgetToBoolSetting(sif, m_ui.doubleClickTogglesFullscreen, "UI", "DoubleClickTogglesFullscreen",
@@ -162,6 +163,9 @@ InterfaceSettingsWidget::InterfaceSettingsWidget(SettingsWindow* dialog, QWidget
 	dialog->registerWidgetHelp(
 		m_ui.autoBootSaveStateTen, tr("AutoBoot SaveState 10"), tr("Unchecked"),
 		tr("AutoBoot SaveState 10"));
+	dialog->registerWidgetHelp(
+		m_ui.sindenRecoil, tr("Sinden Recoil"), tr("Unchecked"),
+		tr("Use Sinden Recoil"));
 	dialog->registerWidgetHelp(
 		m_ui.doubleClickTogglesFullscreen, tr("Double-Click Toggles Fullscreen"), tr("Checked"), 
 		tr("Allows switching in and out of fullscreen mode by double-clicking the game window."));

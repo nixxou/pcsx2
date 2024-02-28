@@ -1139,6 +1139,7 @@ struct Pcsx2Config
 		EnableDiscordPresence : 1, // enables discord rich presence integration
 		EnableMameHooker : 1,
 		AutoBootSaveStateTen : 1,
+		SindenRecoil : 1,
 		InhibitScreensaver : 1,
 		BackupSavestate : 1,
 		SavestateZstdCompression : 1,

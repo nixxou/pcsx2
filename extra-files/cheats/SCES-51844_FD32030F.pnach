@@ -1,0 +1,7 @@
+gametitle=Time Crisis 3 EU
+
+//50fps Code
+patch=1,EE,201CFB64,extended,24420002
+
+//Gun Flash Removal
+patch=1,EE,2012AD08,word,00000000

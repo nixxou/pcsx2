@@ -1,0 +1,8 @@
+gametitle=Time Crisis - Crisis Zone (NTSC-U)
+
+// Sudden white flash
+patch=0,EE,20126EF0,extended,03E00008
+patch=0,EE,20126EF4,extended,00000000
+// Full-auto fog effect
+//patch=0,EE,20126FB0,extended,03E00008
+//patch=0,EE,20126FB4,extended,00000000

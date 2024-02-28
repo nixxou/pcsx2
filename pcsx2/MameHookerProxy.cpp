@@ -116,21 +116,93 @@ void MameHookerProxy::CloseGame()
     CloseHandle(hPipe);
   }
 
+  if (hPipeSindenGunA != nullptr)
+  {
+	CloseHandle(hPipeSindenGunA);
+  }
+
+  if (hPipeSindenGunB != nullptr)
+  {
+	CloseHandle(hPipeSindenGunB);
+  }
+
   pipeConnected = false;
   pipeConnectedGunA = false;
   pipeConnectedGunB = false;
   pipeConnectedGunC = false;
   pipeConnectedGunD = false;
 
+  pipeConnectedSindenGunA = false;
+  pipeConnectedSindenGunB = false;
+
 }
 
 void MameHookerProxy::Gunshot(int gunIndex)
 {
+  std::string message = "1";
+  if (useSindenRecoil)
+  {
+	if (gunIndex == 0)
+	{
+	  if (!pipeConnectedSindenGunA)
+	  {
+		if (hPipeSindenGunA != nullptr)
+		{
+			CloseHandle(hPipeSindenGunA);
+		}
+		hPipeSindenGunA =
+			CreateFileA("\\\\.\\pipe\\RecoilSindenGunA", GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+		if (hPipeSindenGunA != INVALID_HANDLE_VALUE)
+		{
+			pipeConnectedSindenGunA = true;
+		}
+	  }
+	  if (pipeConnectedSindenGunA)
+	  {
+		DWORD bytesWritten;
+		DWORD messageLength = static_cast<DWORD>(message.length());
+		if (!WriteFile(hPipeSindenGunA, message.c_str(), messageLength, &bytesWritten, NULL))
+		{
+			CloseHandle(hPipeSindenGunA);
+			pipeConnectedSindenGunA = false;
+		}
+	  }
+	}
+	if (gunIndex == 1)
+	{
+	  if (!pipeConnectedSindenGunB)
+	  {
+		if (hPipeSindenGunB != nullptr)
+		{
+			CloseHandle(hPipeSindenGunB);
+		}
+		hPipeSindenGunB = CreateFileA("\\\\.\\pipe\\RecoilSindenGunB", GENERIC_WRITE, 0, NULL,
+			OPEN_EXISTING, 0, NULL);
+		if (hPipeSindenGunB != INVALID_HANDLE_VALUE)
+		{
+			pipeConnectedSindenGunB = true;
+		}
+	  }
+	  if (pipeConnectedSindenGunB)
+	  {
+		DWORD bytesWritten;
+		DWORD messageLength = static_cast<DWORD>(message.length());
+		if (!WriteFile(hPipeSindenGunB, message.c_str(), messageLength, &bytesWritten, NULL))
+		{
+			CloseHandle(hPipeSindenGunB);
+			pipeConnectedSindenGunB = false;
+		}
+	  }
+	}  
+  }
+
+
+
   if (!pipeConnected || !active)
     return;
 
   
-  std::string message = "1";
+ 
   if (gunIndex == 0)
   {
     if (!pipeConnectedGunA)
@@ -295,11 +367,24 @@ void MameHookerProxy::StartGame(std::string id)
   {
     CloseHandle(hPipeGunD);
   }
+
+  if (hPipeSindenGunA != nullptr)
+  {
+	CloseHandle(hPipeSindenGunA);
+  }
+
+  if (hPipeSindenGunB != nullptr)
+  {
+	CloseHandle(hPipeSindenGunB);
+  }
+
   pipeConnected = false;
   pipeConnectedGunA = false;
   pipeConnectedGunB = false;
   pipeConnectedGunC = false;
   pipeConnectedGunD = false;
+  pipeConnectedSindenGunA = false;
+  pipeConnectedSindenGunB = false;
 
   std::string executableDirectory = getExecutableDirectory();
   std::string programPath = executableDirectory + "\\MameOutputSender.exe";

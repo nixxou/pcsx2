@@ -91,7 +91,14 @@
          <string>AutoBoot SaveState 10</string>
         </property>
        </widget>
-      </item>		 
+      </item>
+      <item row="5" column="1">
+       <widget class="QCheckBox" name="sindenRecoil">
+        <property name="text">
+         <string>Use Sinden Recoil</string>
+        </property>
+       </widget>
+      </item>			 
      </layout>
     </widget>
    </item>
